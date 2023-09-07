@@ -5,11 +5,18 @@ const crypto = require("crypto");
 const { sendEmail } = require("../middlewares/sendEmail");
 const ErrorHandler = require("../utils/ErrorHandler");
 const { catchAsyncError } = require("../middlewares/catchAsyncError");
+const getDataUri = require("../utils/dataUri");
+const cloudinary = require("cloudinary");
 
 // Export a function called `registerUser` that creates a new user in the database
 exports.registerUser = catchAsyncError(async (req, res, next) => {
   // Extract the name, email, and password from the request body
   const { name, email, password } = req.body;
+  const myFile = req.file;
+
+  if (!name || !email || !password || !myFile) {
+    return next(new ErrorHandler("Please fill the required fields", 400));
+  }
 
   // Check if a user with the same email already exists in the database
   let user = await User.findOne({ email });
@@ -19,14 +26,17 @@ exports.registerUser = catchAsyncError(async (req, res, next) => {
     return next(new ErrorHandler("User already exists", 400));
   }
 
+  const fileUri = getDataUri(myFile);
+  const myCloud = await cloudinary.v2.uploader.upload(fileUri.content);
+
   // If a user with the same email does not exist, create a new user with the provided data
   user = await User.create({
     name,
     email,
     password,
     avatar: {
-      public_id: "sample_id",
-      url: "sample_url",
+      public_id: myCloud.public_id,
+      url: myCloud.secure_url,
     },
   });
 
@@ -181,9 +191,10 @@ exports.updateProfile = catchAsyncError(async (req, res, next) => {
   // Find the user with the ID of the currently logged in user
   let user = await User.findById(req.user._id);
   const { name, email } = req.body;
+  const myFile = req.file;
 
   // If neither name nor email is provided, send a 400 error response
-  if (!name && !email) {
+  if (!name && !email && !myFile) {
     return next(new ErrorHandler("Please enter what you want to update", 400));
   }
 
@@ -195,6 +206,16 @@ exports.updateProfile = catchAsyncError(async (req, res, next) => {
   // If email is provided, update the user's email
   if (email) {
     user.email = email;
+  }
+
+  if (myFile) {
+    const fileUri = getDataUri(myFile);
+    const myCloud = await cloudinary.v2.uploader.upload(fileUri.content);
+
+    user.avatar = {
+      public_id : myCloud.public_id,
+      url : myCloud.secure_url
+    }
   }
 
   // Save the updated user to the database
@@ -286,43 +307,42 @@ exports.getUserProfile = catchAsyncError(async (req, res, next) => {
 });
 
 exports.forgotPassword = catchAsyncError(async (req, res, next) => {
-    let user = await User.findOne({ email: req.body.email });
+  let user = await User.findOne({ email: req.body.email });
 
-    if (!user) {
-      return next(new ErrorHandler("User not found!", 404));
-    }
+  if (!user) {
+    return next(new ErrorHandler("User not found!", 404));
+  }
 
-    const resetPasswordToken = await user.getResetPasswordToken();
+  const resetPasswordToken = await user.getResetPasswordToken();
 
-    await user.save();
+  await user.save();
 
-    const resetUrl = `${req.protocol}://${req.get(
-      "host"
-    )}/api/v1/password/reset/${resetPasswordToken}`;
-    const message = `To reset your password click on the bellow link. This Link will expire in ten miniuts.\n\n${resetUrl}`;
+  const resetUrl = `${req.protocol}://${req.get(
+    "host"
+  )}/api/v1/password/reset/${resetPasswordToken}`;
+  const message = `To reset your password click on the bellow link. This Link will expire in ten miniuts.\n\n${resetUrl}`;
 
-    try {
-      await sendEmail({
-        email: user.email,
-        subject: "Reset Password",
-        message,
-      });
+  try {
+    await sendEmail({
+      email: user.email,
+      subject: "Reset Password",
+      message,
+    });
 
-      res.status(200).json({
-        success: true,
-        message: `Email Sent to ${user.email}`,
-      });
-    } catch (error) {
-      (user.resetPasswordToken = undefined),
-        (user.resetPasswordExpire = undefined),
-        await user.save();
+    res.status(200).json({
+      success: true,
+      message: `Email Sent to ${user.email}`,
+    });
+  } catch (error) {
+    (user.resetPasswordToken = undefined),
+      (user.resetPasswordExpire = undefined),
+      await user.save();
 
-      res.status(500).json({
-        success: false,
-        message: error.message,
-      });
-    }
-
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 });
 
 exports.resetPassword = catchAsyncError(async (req, res, next) => {

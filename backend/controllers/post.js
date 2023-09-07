@@ -4,20 +4,44 @@ const Post = require("../models/Post");
 const User = require("../models/User");
 const { catchAsyncError } = require("../middlewares/catchAsyncError");
 const ErrorHandler = require("../utils/ErrorHandler");
+const getDataUri = require("../utils/dataUri");
+const cloudinary = require("cloudinary");
 
 // Export a function called `createPost` that creates a new post and associates it with the currently authenticated user
 exports.createPost = catchAsyncError(async (req, res, next) => {
-  // Create a new `newPostData` object containing the post's caption, image public ID and URL, and the ID of the authenticated user
-  const newPostData = {
-    caption: req.body.caption,
+  const { caption } = req.body;
+  const myFile = req.file;
 
-    image: {
-      public_id: req.body.public_id, // The public ID of the image uploaded by the user
-      url: req.body.url, // The URL of the image uploaded by the user
-    },
+  if (!myFile && !caption) {
+    return next(new ErrorHandler("Please fill any of the field", 400));
+  }
 
+  let newPostData = {
+    caption: undefined,
+    image: undefined,
     owner: req.user._id, // The ID of the authenticated user
   };
+
+  if (myFile) {
+    const fileUri = getDataUri(myFile);
+    const myCloud = await cloudinary.v2.uploader.upload(fileUri.content);
+
+    // Create a new `newPostData` object containing the post's caption, image public ID and URL, and the ID of the authenticated user
+    newPostData = {
+      caption: caption,
+      image: {
+        public_id: myCloud.public_id, // The public ID of the image uploaded by the user
+        url: myCloud.secure_url, // The URL of the image uploaded by the user
+      },
+
+      owner: req.user._id, // The ID of the authenticated user
+    };
+  } else {
+    newPostData = {
+      caption: caption,
+      owner: req.user._id, // The ID of the authenticated user
+    };
+  }
 
   // Use the `Post.create()` method to create a new post in the database using the `newPostData` object
   const newPost = await Post.create(newPostData);
