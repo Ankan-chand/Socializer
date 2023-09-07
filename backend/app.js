@@ -1,6 +1,8 @@
 // Import Express and cookie-parser libraries
 const express = require('express');
 const cookieParser = require('cookie-parser');
+const errorMiddleware = require('./middlewares/Error.js');
+const ErrorHandler = require('./utils/ErrorHandler.js');
 
 // Create a new Express app instance
 const app = express();
@@ -25,10 +27,7 @@ app.use("/api/v1", postRoutes);
 app.use("/api/v1",userRoutes);
 
 // Error handling middleware
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).json({ message: "Internal Server Error" });
-  });
+app.use(errorMiddleware);
 
 // Export the app for use in other parts of the application
 module.exports = app;

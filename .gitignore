@@ -1,3 +1,5 @@
 /backend/config/config.env
 /node_modules
 /.vscode
+/backend/middlewares/multer.js
+/backend/middlewares/sendEmail.js

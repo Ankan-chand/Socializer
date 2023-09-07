@@ -78,7 +78,7 @@ userSchema.methods.matchPassword = async function (password) {
 
 // Define a method to generate a JSON Web Token (JWT) for the user using their ID and a secret key stored in the `JWT_SECRET` environment variable
 userSchema.methods.generateToken = async function () {
-  return jwt.sign({_id:this._id},process.env.JWT_SECRET);
+  return await jwt.sign({_id:this._id, name:this.name},process.env.JWT_SECRET);
 };
 
 userSchema.methods.getResetPasswordToken = async function() {

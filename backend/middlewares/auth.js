@@ -15,10 +15,10 @@ exports.isAuthenticated = async (req,res,next) => {
         };
 
         // If there is a `token`, verify the token using the `jwt.verify()` method and the `JWT_SECRET` environment variable
-        const decoded = await jwt.verify(token,process.env.JWT_SECRET);
+        const payload = await jwt.verify(token,process.env.JWT_SECRET);
 
         // Extract the user ID from the decoded token and find the user in the database using the `User.findById()` method
-        req.user = await User.findById(decoded._id);
+        req.user = await User.findById(payload._id);
 
         // Set the `user` object in the request object and call the `next()` function to pass control to the next middleware function
         next();
