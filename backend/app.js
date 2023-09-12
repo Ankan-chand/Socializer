@@ -3,6 +3,7 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const errorMiddleware = require('./middlewares/Error.js');
 const ErrorHandler = require('./utils/ErrorHandler.js');
+const cors = require("cors");
 
 // Create a new Express app instance
 const app = express();
@@ -12,6 +13,12 @@ if(process.env.NODE_ENV !== "production"){
     // dotenv is used to load the environment variables in process.env from config.env
     require('dotenv').config({path: 'backend/config/config.env'});
 };
+
+//add cors
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'DELETE', 'PUT']
+}))
 
 // Use middleware to parse JSON and URL-encoded request bodies, and cookies
 app.use(express.json());
