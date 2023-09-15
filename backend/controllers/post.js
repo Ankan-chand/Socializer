@@ -10,9 +10,9 @@ const cloudinary = require("cloudinary");
 // Export a function called `createPost` that creates a new post and associates it with the currently authenticated user
 exports.createPost = catchAsyncError(async (req, res, next) => {
   const { caption } = req.body;
-  const myFile = req.file;
+  const file = req.file;
 
-  if (!myFile && !caption) {
+  if (!file && !caption) {
     return next(new ErrorHandler("Please fill any of the field", 400));
   }
 
@@ -22,8 +22,8 @@ exports.createPost = catchAsyncError(async (req, res, next) => {
     owner: req.user._id, // The ID of the authenticated user
   };
 
-  if (myFile) {
-    const fileUri = getDataUri(myFile);
+  if (file) {
+    const fileUri = getDataUri(file);
     const myCloud = await cloudinary.v2.uploader.upload(fileUri.content);
 
     // Create a new `newPostData` object containing the post's caption, image public ID and URL, and the ID of the authenticated user
