@@ -4,13 +4,16 @@ const Post = require("../models/Post");
 const User = require("../models/User");
 const { catchAsyncError } = require("../middlewares/catchAsyncError");
 const ErrorHandler = require("../utils/ErrorHandler");
-const getDataUri = require("../utils/dataUri");
+// const getDataUri = require("../utils/dataUri");
 const cloudinary = require("cloudinary");
+
+
+
 
 // Export a function called `createPost` that creates a new post and associates it with the currently authenticated user
 exports.createPost = catchAsyncError(async (req, res, next) => {
   const { caption } = req.body;
-  const file = req.file;
+  const file = req.body.image;
 
   if (!file && !caption) {
     return next(new ErrorHandler("Please fill any of the field", 400));
@@ -23,15 +26,18 @@ exports.createPost = catchAsyncError(async (req, res, next) => {
   };
 
   if (file) {
-    const fileUri = getDataUri(file);
-    const myCloud = await cloudinary.v2.uploader.upload(fileUri.content);
+    // const fileUri = getDataUri(file);
+    const myCloud = await cloudinary.v2.uploader.upload(file, {
+      folder:"posts"
+    });
+
 
     // Create a new `newPostData` object containing the post's caption, image public ID and URL, and the ID of the authenticated user
     newPostData = {
       caption: caption,
       image: {
-        public_id: myCloud.public_id, // The public ID of the image uploaded by the user
-        url: myCloud.secure_url, // The URL of the image uploaded by the user
+        public_id: myCloud.public_id,
+        url: myCloud.secure_url,
       },
 
       owner: req.user._id, // The ID of the authenticated user
@@ -48,7 +54,7 @@ exports.createPost = catchAsyncError(async (req, res, next) => {
 
   // Retrieve the authenticated user using their ID and add the new post's ID to their `posts` array
   const user = await User.findById(req.user._id);
-  user.posts.push(newPost._id);
+  user.posts.unshift(newPost._id);
 
   // Save the updated user object to the database
   await user.save();
@@ -56,9 +62,14 @@ exports.createPost = catchAsyncError(async (req, res, next) => {
   // Send a JSON response with a `201 Created` status code and the newly created post object
   res.status(201).json({
     success: true,
-    post: newPost,
+    message:"Post created"
   });
 });
+
+
+
+
+
 
 // Export a function called `deletePost` that deletes a post from the db and the posts array of the currently authenticated user
 exports.deletePost = catchAsyncError(async (req, res, next) => {
@@ -76,6 +87,11 @@ exports.deletePost = catchAsyncError(async (req, res, next) => {
     return next(new ErrorHandler("Unauthorized", 401));
   }
 
+  //remove image from cloudinary
+  if(post.image.public_id){
+    await cloudinary.v2.uploader.destroy(post.image.public_id);
+  }
+
   // Remove the post from the database
   await post.remove();
 
@@ -91,6 +107,13 @@ exports.deletePost = catchAsyncError(async (req, res, next) => {
     message: "Post deleted successfully",
   });
 });
+
+
+
+
+
+
+
 
 // Export a function called `likeAndUnlikePost` that helps to like or dislike a post
 exports.likeAndDislikePost = catchAsyncError(async (req, res, next) => {
@@ -129,6 +152,11 @@ exports.likeAndDislikePost = catchAsyncError(async (req, res, next) => {
   }
 });
 
+
+
+
+
+
 //exports a function `getPostsofFollowing` that retrieves posts from users that the current user is following
 exports.getPostsOfFollowing = catchAsyncError(async (req, res, next) => {
   // Find the current user by their ID
@@ -139,14 +167,22 @@ exports.getPostsOfFollowing = catchAsyncError(async (req, res, next) => {
     owner: {
       $in: user.following,
     },
-  });
+  }).populate("owner likes comments.user");
 
   // Return a success message with the retrieved posts in the response body
   res.status(200).json({
     success: true,
-    posts,
+    posts:posts.reverse(),
   });
 });
+
+
+
+
+
+
+
+
 
 // This function updates caption of a post
 exports.updateCaption = catchAsyncError(async (req, res, next) => {
@@ -184,6 +220,14 @@ exports.updateCaption = catchAsyncError(async (req, res, next) => {
   });
 });
 
+
+
+
+
+
+
+
+
 exports.addComments = catchAsyncError(async (req, res, next) => {
   // Find the post by its ID
   let post = await Post.findById(req.params.id);
@@ -194,7 +238,7 @@ exports.addComments = catchAsyncError(async (req, res, next) => {
   }
 
   // Push a new comment object to the post's comments array
-  post.comments.push({
+  post.comments.unshift({
     user: req.user._id, // Assuming the authenticated user's ID is available in req.user._id
     comment: req.body.comment, // Assuming the comment text is available in req.body.comment
   });
@@ -209,111 +253,56 @@ exports.addComments = catchAsyncError(async (req, res, next) => {
   });
 });
 
-exports.updateComments = catchAsyncError(async (req, res, next) => {
-  // Find the post by its ID
-  let post = await Post.findById(req.params.postid);
+
+
+
+
+exports.deleteComments = catchAsyncError(async (req, res, next) => {
+  let post = await Post.findById(req.params.id);
 
   if (!post) {
-    // If the post is not found, return an error response
     return next(new ErrorHandler("Post not found!", 404));
+  }
+
+  const commentIdToDelete = req.body.commentId;
+
+  if (!commentIdToDelete) {
+    return next(new ErrorHandler("Comment Id is required", 400));
   }
 
   let commentIndex = -1;
 
-  // Iterate through the comments array to find the index of the comment to be updated
-  post.comments.forEach((item, index) => {
-    if (item._id.toString() === req.params.commentid.toString()) {
-      commentIndex = index;
+  // Find the index of the comment to delete
+  for (let i = 0; i < post.comments.length; i++) {
+    if (post.comments[i]._id.toString() === commentIdToDelete.toString()) {
+
+      if(post.owner.toString() === req.user._id.toString()){
+        commentIndex = i;
+        break;
+      }
+      else if(post.comments[i].user.toString() === req.user._id.toString()){
+        commentIndex = i;
+        break;
+      }
+      else{
+        return next(new ErrorHandler("Unauthorized", 401));
+      }
     }
+  }
+
+  // If the comment is not found, return an error
+  if (commentIndex === -1) {
+    return next(new ErrorHandler("Comment not found!", 404));
+  }
+
+  // Remove the comment from the array
+  post.comments.splice(commentIndex, 1);
+
+  await post.save();
+
+  return res.status(200).json({
+    success: true,
+    message: "Comment has been deleted",
   });
-
-  if (commentIndex !== -1) {
-    // Check if the user making the request is the owner of the comment
-    if (
-      post.comments[commentIndex].user.toString() !== req.user._id.toString()
-    ) {
-      return next(new ErrorHandler("Unauthorised", 401));
-    }
-
-    // Update the comment with the new comment text from req.body.comment
-    post.comments[commentIndex].comment = req.body.comment;
-
-    // Save the updated post with the modified comment
-    await post.save();
-
-    // Return a success response
-    res.status(200).json({
-      success: true,
-      message: "Comment updated",
-    });
-  } else {
-    // If the comment is not found in the comments array, return an error response
-    return next(new ErrorHandler("Comment doesn't exist", 404));
-  }
 });
 
-// Export a function to delete a comment from a post
-exports.deleteComments = catchAsyncError(async (req, res, next) => {
-  // Retrieve the post from the database using the post ID provided in the request parameters
-  let post = await Post.findById(req.params.postid);
-
-  // If the post is not found, return a 404 error
-  if (!post) {
-    return next(new ErrorHandler("Post not found!", 404));
-  }
-
-  // Initialize the index variable to -1
-  let index = -1;
-
-  // If the user is the owner of the post, remove the comment from the post's comments array using the comment ID provided in the request parameters
-  if (post.owner.toString() === req.user._id.toString()) {
-    post.comments.forEach((item, i) => {
-      if (item._id.toString() === req.params.commentid.toString()) {
-        index = i;
-        return post.comments.splice(index, 1);
-      }
-    });
-
-    // If the comment is not found, return a 404 error
-    if (index === -1) {
-      return next(new ErrorHandler("Comment doesn't exist", 404));
-    }
-
-    // Save the updated post to the database
-    await post.save();
-
-    // Return a success message
-    res.status(200).json({
-      success: true,
-      message: "Comment has been deleted.",
-    });
-  } else {
-    // If the user is not the owner, check if the comment is owned by the user
-    post.comments.forEach((item, i) => {
-      if (item._id.toString() === req.params.commentid.toString()) {
-        // If the comment is owned by the user, remove the comment from the post's comments array
-        if (item.user.toString() === req.user._id.toString()) {
-          index = i;
-          return post.comments.splice(index, 1);
-        } else {
-          // If the comment is not owned by the user, return a 400 error
-          return next(new ErrorHandler("Unauthorised", 401));
-        }
-      }
-    });
-
-    // If the comment is not found, return a 404 error
-    if (index === -1) {
-      return next(new ErrorHandler("Comment doesn't exist", 404));
-    }
-
-    // Save the updated post to the database
-    await post.save();
-
-    // Return a success message
-    res.status(200).json({
-      success: true,
-      message: "Your comment has been deleted.",
-    });
-  }
-});

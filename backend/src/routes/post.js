@@ -14,8 +14,7 @@ router.route("/post/:id").get(isAuthenticated, likeAndDislikePost).put(isAuthent
 
 router.route("/posts").get(isAuthenticated, getPostsOfFollowing);
 
-router.route("/post/comment/:id").post(isAuthenticated, addComments);
-router.route("/post/comment/:postid/:commentid").post(isAuthenticated, updateComments).delete(isAuthenticated, deleteComments);
+router.route("/post/comment/:id").put(isAuthenticated, addComments).delete(isAuthenticated, deleteComments);
 
 
 // Export the router for use in other parts of the application
