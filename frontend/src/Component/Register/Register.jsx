@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import "./Register.css";
 import { registerUser } from "../../Actions/User";
-import { useAlert } from "react-alert";
+import { toast } from "react-toastify";
 
 const Register = () => {
   const [name, setName] = useState("");
@@ -13,7 +13,6 @@ const Register = () => {
   const [password, setPassword] = useState("");
 
   const dispatch = useDispatch();
-  const alert = useAlert();
   const { loading, error } = useSelector((state) => state.user);
 
   const handleImageChange = (e) => {
@@ -36,10 +35,10 @@ const Register = () => {
 
   useEffect(() => {
     if (error) {
-      alert.error(error);
+      toast.error(error);
       dispatch({ type: "clearErrors" });
     }
-  }, [dispatch, error, alert]);
+  }, [dispatch, error]);
 
   return (
     <div className="register">

@@ -6,11 +6,10 @@ import { useDispatch, useSelector } from "react-redux";
 import { getAllUsers, getFollowingPosts } from "../../Actions/User";
 import Loader from "../Loader/Loader";
 import { Typography } from "@mui/material";
-import { useAlert } from "react-alert";
+import { toast } from "react-toastify";
 
 const Home = () => {
   const dispatch = useDispatch();
-  const alert = useAlert();
 
   const { user: loggedUser } = useSelector((state) => state.user);
 
@@ -32,19 +31,19 @@ const Home = () => {
 
   useEffect(() => {
     if (error) {
-      alert.error(error);
+      toast.error(error);
       dispatch({ type: "clearErrors" });
     }
 
     if (likeError) {
-      alert.error(likeError);
+      toast.error(likeError);
       dispatch({ type: "clearErrors" });
     }
     if (message) {
-      alert.success(message);
+      toast.success(message);
       dispatch({ type: "clearMessage" });
     }
-  }, [alert, error, message, likeError, dispatch]);
+  }, [error, message, likeError, dispatch]);
 
   return loading === true || usersLoading === true ? (
     <Loader />
@@ -66,7 +65,7 @@ const Home = () => {
             />
           ))
         ) : (
-          <Typography variant="h6">No posts yet</Typography>
+          <Typography variant="h6">No posts to show. Follow users to see their posts.</Typography>
         )}
       </div>
       <div className="homeright">

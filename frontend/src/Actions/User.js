@@ -6,8 +6,9 @@ export const loginUser = (email, password) => async (dispatch) => {
       type: "LoginRequest",
     });
 
+
     const { data } = await axios.post(
-      "/api/v1/login",
+      "https://socializer-39eg.onrender.com/api/v1/login",
       { email, password },
       {
         headers: {
@@ -15,6 +16,8 @@ export const loginUser = (email, password) => async (dispatch) => {
         },
       }
     );
+
+    localStorage.setItem("authorization", data.token);
 
     dispatch({
       type: "LoginSuccess",
@@ -34,7 +37,18 @@ export const loadUser = () => async (dispatch) => {
       type: "LoadUserRequest",
     });
 
-    const { data } = await axios.get("/api/v1/me");
+    const authToken = localStorage.getItem("authorization");
+
+
+    const { data } = await axios.get(
+      "https://socializer-39eg.onrender.com/api/v1/me",
+      {
+        headers: {
+          "authorization": `Bearer ${authToken}`,
+        },
+        withCredentials: true,
+      }
+    );
 
     dispatch({
       type: "LoadUserSuccess",
@@ -54,7 +68,18 @@ export const getFollowingPosts = () => async (dispatch) => {
       type: "postOfFollowingRequest",
     });
 
-    const { data } = await axios.get("/api/v1/posts");
+    const authToken = localStorage.getItem("authorization");
+
+    const { data } = await axios.get(
+      "https://socializer-39eg.onrender.com/api/v1/posts",
+      {
+        headers: {
+          "authorization": `Bearer ${authToken}`,
+        },
+        withCredentials: true,
+      }
+    );
+
     dispatch({
       type: "postOfFollowingSuccess",
       payload: data.posts,
@@ -67,14 +92,26 @@ export const getFollowingPosts = () => async (dispatch) => {
   }
 };
 
-export const getAllUsers = (name = "") =>
+export const getAllUsers =
+  (name = "") =>
   async (dispatch) => {
     try {
       dispatch({
         type: "allUsersRequest",
       });
 
-      const { data } = await axios.get(`/api/v1/users?name=${name}`);
+      const authToken = localStorage.getItem("authorization");
+
+      const { data } = await axios.get(
+        `https://socializer-39eg.onrender.com/api/v1/users?name=${name}`,
+        {
+          headers: {
+            "authorization": `Bearer ${authToken}`,
+          },
+          withCredentials: true,
+        }
+      );
+
       dispatch({
         type: "allUsersSuccess",
         payload: data.users,
@@ -93,7 +130,18 @@ export const getMyPosts = () => async (dispatch) => {
       type: "myPostsRequest",
     });
 
-    const { data } = await axios.get("/api/v1/my/posts");
+    const authToken = localStorage.getItem("authorization");
+
+    const { data } = await axios.get(
+      "https://socializer-39eg.onrender.com/api/v1/my/posts",
+      {
+        headers: {
+          "authorization": `Bearer ${authToken}`,
+        },
+        withCredentials: true,
+      }
+    );
+
     dispatch({
       type: "myPostsSuccess",
       payload: data.posts,
@@ -112,7 +160,9 @@ export const logoutUser = () => async (dispatch) => {
       type: "LogoutUserRequest",
     });
 
-    await axios.get("/api/v1/logout");
+    await axios.get("https://socializer-39eg.onrender.com/api/v1/logout");
+
+    localStorage.removeItem("authorization");
 
     dispatch({
       type: "LogoutUserSuccess",
@@ -125,15 +175,15 @@ export const logoutUser = () => async (dispatch) => {
   }
 };
 
-
-export const registerUser = (name, email, password, avatar) => async (dispatch) => {
+export const registerUser =
+  (name, email, password, avatar) => async (dispatch) => {
     try {
       dispatch({
         type: "RegisterRequest",
       });
 
       const { data } = await axios.post(
-        "/api/v1/register",
+        "https://socializer-39eg.onrender.com/api/v1/register",
         { name, email, password, avatar },
         {
           headers: {
@@ -141,6 +191,8 @@ export const registerUser = (name, email, password, avatar) => async (dispatch) 
           },
         }
       );
+
+      await localStorage.setItem("authorization", data.token);
 
       dispatch({
         type: "RegisterSuccess",
@@ -160,14 +212,18 @@ export const updateProfile = (name, email, avatar) => async (dispatch) => {
       type: "updateProfileRequest",
     });
 
+    const authToken = localStorage.getItem("authorization");
+
     const { data } = await axios.put(
-      "/api/v1/update/profile",
+      "https://socializer-39eg.onrender.com/api/v1/update/profile",
       { name, email, avatar },
       {
         headers: {
           "Content-Type": "application/json",
+          "authorization": `Bearer ${authToken}`,
         },
-      }
+      },
+      { withCredentials: true }
     );
 
     dispatch({
@@ -182,21 +238,25 @@ export const updateProfile = (name, email, avatar) => async (dispatch) => {
   }
 };
 
-
-export const updatePassword = (oldPassword, newPassword) => async (dispatch) => {
+export const updatePassword =
+  (oldPassword, newPassword) => async (dispatch) => {
     try {
       dispatch({
         type: "updatePasswordRequest",
       });
 
+      const authToken = localStorage.getItem("authorization");
+
       const { data } = await axios.put(
-        "/api/v1/update/password",
+        "https://socializer-39eg.onrender.com/api/v1/update/password",
         { oldPassword, newPassword },
         {
           headers: {
             "Content-Type": "application/json",
+            "authorization": `Bearer ${authToken}`,
           },
-        }
+        },
+        { withCredentials: true }
       );
 
       dispatch({
@@ -211,148 +271,183 @@ export const updatePassword = (oldPassword, newPassword) => async (dispatch) => 
     }
   };
 
+export const deleteMyProfile = () => async (dispatch) => {
+  try {
+    dispatch({
+      type: "deleteProfileRequest",
+    });
 
-  export const deleteMyProfile = () => async (dispatch) => {
-    try {
-      dispatch({
-        type: "deleteProfileRequest",
-      });
-  
-      const { data } = await axios.delete("/api/v1/delete/me");
-  
-      dispatch({
-        type: "deleteProfileSuccess",
-        payload: data.message,
-      });
-    } catch (error) {
-      dispatch({
-        type: "deleteProfileFailure",
-        payload: error.response.data.message,
-      });
-    }
-  };
+    const authToken = localStorage.getItem("authorization");
 
-
-
-  export const forgotPassword = (email) => async (dispatch) => {
-    try {
-      dispatch({
-        type: "forgotPasswordRequest",
-      });
-  
-      const { data } = await axios.post(
-        "/api/v1/forgot/password",
-        {
-          email,
+    const { data } = await axios.delete(
+      "https://socializer-39eg.onrender.com/api/v1/delete/me",
+      {
+        headers: {
+          "authorization": `Bearer ${authToken}`,
         },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-  
-      dispatch({
-        type: "forgotPasswordSuccess",
-        payload: data.message,
-      });
-    } catch (error) {
-      dispatch({
-        type: "forgotPasswordFailure",
-        payload: error.response.data.message,
-      });
-    }
-  };
+        withCredentials: true,
+      }
+    );
+
+    localStorage.removeItem("authorization");
+
+    dispatch({
+      type: "deleteProfileSuccess",
+      payload: data.message,
+    });
+  } catch (error) {
+    dispatch({
+      type: "deleteProfileFailure",
+      payload: error.response.data.message,
+    });
+  }
+};
 
 
-  export const resetPassword = (token, password) => async (dispatch) => {
-    try {
-      dispatch({
-        type: "resetPasswordRequest",
-      });
-  
-      const { data } = await axios.put(
-        `/api/v1/password/reset/${token}`,
-        {
-          password,
+
+export const forgotPassword = (email) => async (dispatch) => {
+  try {
+    dispatch({
+      type: "forgotPasswordRequest",
+    });
+
+    const { data } = await axios.post(
+      "https://socializer-39eg.onrender.com/api/v1/forgot/password",
+      {
+        email,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
         },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-  
-      dispatch({
-        type: "resetPasswordSuccess",
-        payload: data.message,
-      });
-    } catch (error) {
-      dispatch({
-        type: "resetPasswordFailure",
-        payload: error.response.data.message,
-      });
-    }
-  };
+      }
+    );
 
+    dispatch({
+      type: "forgotPasswordSuccess",
+      payload: data.message,
+    });
+  } catch (error) {
+    dispatch({
+      type: "forgotPasswordFailure",
+      payload: error.response.data.message,
+    });
+  }
+};
 
-  export const getUserPosts = (id) => async (dispatch) => {
-    try {
-      dispatch({
-        type: "userPostsRequest",
-      });
-  
-      const { data } = await axios.get(`/api/v1/userposts/${id}`);
-      dispatch({
-        type: "userPostsSuccess",
-        payload: data.posts,
-      });
-    } catch (error) {
-      dispatch({
-        type: "userPostsFailure",
-        payload: error.response.data.message,
-      });
-    }
-  };
+export const resetPassword = (token, password) => async (dispatch) => {
+  try {
+    dispatch({
+      type: "resetPasswordRequest",
+    });
 
+    const { data } = await axios.put(
+      `https://socializer-39eg.onrender.com/api/v1/password/reset/${token}`,
+      {
+        password,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
+    dispatch({
+      type: "resetPasswordSuccess",
+      payload: data.message,
+    });
+  } catch (error) {
+    dispatch({
+      type: "resetPasswordFailure",
+      payload: error.response.data.message,
+    });
+  }
+};
 
-  export const getUserProfile = (id) => async (dispatch) => {
-    try {
-      dispatch({
-        type: "userProfileRequest",
-      });
-  
-      const { data } = await axios.get(`/api/v1/user/${id}`);
-      dispatch({
-        type: "userProfileSuccess",
-        payload: data.user,
-      });
-    } catch (error) {
-      dispatch({
-        type: "userProfileFailure",
-        payload: error.response.data.message,
-      });
-    }
-  };
+export const getUserPosts = (id) => async (dispatch) => {
+  try {
+    dispatch({
+      type: "userPostsRequest",
+    });
 
+    const authToken = localStorage.getItem("authorization");
 
+    const { data } = await axios.get(
+      `https://socializer-39eg.onrender.com/api/v1/userposts/${id}`,
+      {
+        headers: {
+          "authorization": `Bearer ${authToken}`,
+        },
+        withCredentials: true,
+      }
+    );
+    dispatch({
+      type: "userPostsSuccess",
+      payload: data.posts,
+    });
+  } catch (error) {
+    dispatch({
+      type: "userPostsFailure",
+      payload: error.response.data.message,
+    });
+  }
+};
 
-  export const followAndUnfollowUser = (id) => async (dispatch) => {
-    try {
-      dispatch({
-        type: "followUserRequest",
-      });
-  
-      const { data } = await axios.get(`/api/v1/user/follow/${id}`);
-      dispatch({
-        type: "followUserSuccess",
-        payload: data.message,
-      });
-    } catch (error) {
-      dispatch({
-        type: "followUserFailure",
-        payload: error.response.data.message,
-      });
-    }
-  };
+export const getUserProfile = (id) => async (dispatch) => {
+  try {
+    dispatch({
+      type: "userProfileRequest",
+    });
+
+    const authToken = localStorage.getItem("authorization");
+
+    const { data } = await axios.get(
+      `https://socializer-39eg.onrender.com/api/v1/user/${id}`,
+      {
+        headers: {
+          "authorization": `Bearer ${authToken}`,
+        },
+        withCredentials: true,
+      }
+    );
+    dispatch({
+      type: "userProfileSuccess",
+      payload: data.user,
+    });
+  } catch (error) {
+    dispatch({
+      type: "userProfileFailure",
+      payload: error.response.data.message,
+    });
+  }
+};
+
+export const followAndUnfollowUser = (id) => async (dispatch) => {
+  try {
+    dispatch({
+      type: "followUserRequest",
+    });
+
+    const authToken = localStorage.getItem("authorization");
+
+    const { data } = await axios.get(
+      `https://socializer-39eg.onrender.com/api/v1/user/follow/${id}`,
+      {
+        headers: {
+          "authorization": `Bearer ${authToken}`,
+        },
+        withCredentials: true,
+      }
+    );
+    dispatch({
+      type: "followUserSuccess",
+      payload: data.message,
+    });
+  } catch (error) {
+    dispatch({
+      type: "followUserFailure",
+      payload: error.response.data.message,
+    });
+  }
+};

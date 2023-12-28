@@ -3,22 +3,16 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import { Provider } from "react-redux";
 import store from "./store";
-import { Provider as AlertProvider, positions, transitions } from "react-alert";
-import AlertTemplate from "react-alert-template-basic";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
-const options = {
-  position: positions.BOTTOM_CENTER,
-  timeout: 5000,
-  transition: transitions.SCALE,
-};
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <React.StrictMode>
-      <Provider store = {store}>
-        <AlertProvider template={AlertTemplate} {...options}>
-          <App />
-        </AlertProvider>
-      </Provider>
+    <Provider store = {store}>
+      <ToastContainer autoClose={3000} draggable={false} />
+      <App />
+    </Provider>
   </React.StrictMode>
 );

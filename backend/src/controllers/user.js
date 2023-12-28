@@ -46,19 +46,27 @@ exports.registerUser = catchAsyncError(async (req, res, next) => {
   // Generate a JSON Web Token (JWT) for the user using the `generateToken()` method defined in the `User` model
   const token = await user.generateToken();
 
-  // Set the token as a cookie with an expiration time of 90 days
-  const options = {
-    expires: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
-    httpOnly: true,
-  };
-
-  // Send a `201 Created` response with the newly created user object and the token
-  res.status(201).cookie("token", token, options).json({
+  //Send the token as json to store in localStorage in browser
+  res.status(201).json({
     success: true,
-    message: "User registered successfully.",
+    message: "User registered successfully",
     user,
-    token,
+    token
   });
+
+  // // Set the token as a cookie with an expiration time of 90 days
+  // const options = {
+  //   expires: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+  //   httpOnly: true,
+  // };
+
+  // // Send a `201 Created` response with the newly created user object and the token
+  // res.status(201).cookie("token", token, options).json({
+  //   success: true,
+  //   message: "User registered successfully.",
+  //   user,
+  //   token,
+  // });
 });
 
 
@@ -90,18 +98,26 @@ exports.userLogin = catchAsyncError(async (req, res, next) => {
   // If the passwords match, generate a JWT for the user using the `generateToken()` method
   const token = await user.generateToken();
 
-  // Set the token as a cookie with an expiration time of 90 days
-  const options = {
-    expires: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
-    httpOnly: true,
-  };
-
-  // Send a `200 OK` response with the user object and the token
-  res.status(200).cookie("token", token, options).json({
+  //Send the token as json to store in localStorage in browser
+  res.status(200).json({
     success: true,
+    message: "User logged in successfully",
     user,
-    token,
+    token
   });
+
+  // // Set the token as a cookie with an expiration time of 90 days
+  // const options = {
+  //   expires: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+  //   httpOnly: true,
+  // };
+
+  // // Send a `200 OK` response with the user object and the token
+  // res.status(200).cookie("token", token, options).json({
+  //   success: true,
+  //   user,
+  //   token,
+  // });
 });
 
 
@@ -109,10 +125,15 @@ exports.userLogin = catchAsyncError(async (req, res, next) => {
 
 // Export a function called `userLogout` that logs out the currently authenticated user
 exports.userLogout = catchAsyncError(async (req, res, next) => {
-  // Clear the `token` cookie
-  res.clearCookie("token").json({
+  // // Clear the `token` cookie
+  // res.clearCookie("token").json({
+  //   message: "Logout successfully",
+  // });
+
+  res.json({
     message: "Logout successfully",
   });
+
 });
 
 

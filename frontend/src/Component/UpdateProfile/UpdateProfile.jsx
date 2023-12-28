@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import "./UpdateProfile.css";
 import { loadUser, updateProfile } from "../../Actions/User";
-import { useAlert } from "react-alert";
+import { toast } from "react-toastify";
 import Loader from "../Loader/Loader";
 
 const UpdateProfile = () => {
@@ -20,7 +20,6 @@ const UpdateProfile = () => {
   const [avatarPrev, setAvatarPrev] = useState(user.avatar.url);
 
   const dispatch = useDispatch();
-  const alert = useAlert();
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -45,27 +44,28 @@ const UpdateProfile = () => {
 
   useEffect(() => {
     if (error) {
-      alert.error(error);
+      toast.error(error);
       dispatch({ type: "clearErrors" });
     }
 
     if (updateError) {
-      alert.error(updateError);
+      toast.error(updateError);
       dispatch({ type: "clearErrors" });
     }
 
     if (message) {
-      alert.success(message);
+      toast.success(message);
       dispatch({ type: "clearMessage" });
     }
-  }, [dispatch, error, alert, updateError, message]);
+  }, [dispatch, error, updateError, message]);
+
   return loading ? (
     <Loader />
   ) : (
     <div className="updateProfile">
       <form className="updateProfileForm" onSubmit={submitHandler}>
         <Typography variant="h3" style={{ padding: "2vmax" }}>
-          Social Aap
+          Socializer
         </Typography>
 
         <Avatar

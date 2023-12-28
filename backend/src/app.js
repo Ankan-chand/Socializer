@@ -10,9 +10,11 @@ const app = express();
 
 //add cors
 app.use(cors({
-    origin: '*',
-    methods: ['GET', 'POST', 'DELETE', 'PUT']
-}))
+    origin: ['https://soocializer.netlify.app', 'https://sociai-zer.onrender.com', 'http://localhost:3000'],
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true
+}));
+
 
 // Use middleware to parse JSON and URL-encoded request bodies, and cookies
 app.use(express.json({limit:'50mb'}));
